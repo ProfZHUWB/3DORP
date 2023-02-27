@@ -23,6 +23,3 @@ For Section 5.2 - 5.5
 Run com.zhuwb.research.roboticpacking.exp.MainOnline
 Solution file will be written in subdirectories under results/
 
-For Section 5.6
-Run com.zhuwb.research.roboticpacking.exp.MainIP will produce the result for GLA in Table 9
-We will make our IP model that produce result in Table 9 available soon. (It requires IBM ILog Cplex 12.1) 

@@ -25,7 +25,7 @@ public class Main4Online {
 		expAlgoSimCount(instSeed, algoSeed, new File("result/2021-07-05-simCount-"+instSeed));		
 		expBoxCountInRange(instSeed, algoSeed, new File("result/2021-07-05-boxCountInRange-"+instSeed));
 		expKnowBoxCount(instSeed, algoSeed, new File("result/2021-07-05-knowBoxCount-"+instSeed));
-		expFinal(instSeed, algoSeed, new File("result/2021-07-05-final-"+instSeed));
+		expFinal(instSeed, algoSeed, new File("result/2023-01-18-final-"+instSeed)); // output space occupied by each box in loading instruction
 		
 		System.out.println("gridCount: "+GridPointBySegmentTree.gridCount+
 				"; segmentTreeCount: "+GridPointBySegmentTree.segmentTreeCount+

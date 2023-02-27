@@ -531,7 +531,7 @@ public class State implements Cloneable {
 				ps.println("  close pallet "+rec.palletId+" at "+rec.palletIdxInOperRange);
 				palletBelt = palletBelt.remove(rec.palletIdxInOperRange);
 			} else {
-				ps.println("  place "+rec.boxIdxInArrivalSeq+"-th box (type: "+rec.boxType+") at "+rec.boxIdxInOperRange+" into "+rec.palletIdxInOperRange+"-th pallet at "+rec.palletIdxInOperRange);
+				ps.println("  place "+rec.boxIdxInArrivalSeq+"-th box (type: "+rec.boxType+") at "+rec.boxIdxInOperRange+" into "+rec.palletId+"-th pallet at "+rec.palletIdxInOperRange+"; occupied: "+rec.placement.occupied);
 				boxBelt = boxBelt.remove(rec.boxIdxInOperRange);
 			}
 		}
