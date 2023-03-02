@@ -3,7 +3,9 @@ It is restructured and improved by Ms. Ying Fu and Prof. Wenbin Zhu
 This project is currently maintained by Prof. Wenbin Zhu (i@zhuwb.com)
 
 # 3DORP
-The source code for our paper 3D Online Robotic Palletization Problem
+The source code for our paper 3D Dynamic heterogeneous Robotic Palletization (DHRP) Problem.
+
+We called it  3D online robotic problem. Our setup is an extension of the classical online setting. We renamed it to dynamic heterogeneous which is more appropriate. 
 
 ## Files
 
