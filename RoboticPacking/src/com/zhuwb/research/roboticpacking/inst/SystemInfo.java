@@ -18,7 +18,7 @@ public class SystemInfo {
 		this.boxTypes = new BoxType[inst.boxType.length];
 		for (int t=0; t<inst.boxType.length; t++) {
 			int[] box = inst.boxType[t];
-			this.boxTypes[t] = new BoxType(t, box[0], box[1], box[2], inst.ortPerm[t],gripper, 0.1);
+			this.boxTypes[t] = new BoxType(t, box[0], box[1], box[2], inst.ortPerm[t],gripper, conf.maxDropHeightRatio);
 		}
 		this.boxCountPerType = inst.getBoxCountPerType();
 		double totalBoxVolume = 0;

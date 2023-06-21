@@ -63,6 +63,43 @@ public class Solution {
 		return count;
 	}
 	
+	/**
+	 * @return max{ dropH of loaded boxes }
+	 */
+	public int maxDropH() {
+		int maxDropH = 0;
+		for (int i=0; i<this.closed.length; i++) {
+			for (Placement p:this.closed[i].getPlacements()) {
+				if (p.dh > maxDropH) { maxDropH = p.dh; }
+			}
+		}
+		for (int i=0; i<this.open.length; i++) {
+			for (Placement p:this.open[i].getPlacements()) {
+				if (p.dh > maxDropH) { maxDropH = p.dh; }
+			}
+		}
+		return maxDropH;
+	}
+	/**
+	 * @return max{ dropH/dH of loaded boxes }
+	 */
+	public double maxDropHRatio() {
+		double maxDropHRatio = 0;
+		for (int i=0; i<this.closed.length; i++) {
+			for (Placement p:this.closed[i].getPlacements()) {
+				double ratio = ((double)p.dh) / p.occupied.dH;
+				if (ratio > maxDropHRatio) { maxDropHRatio = ratio; }
+			}
+		}
+		for (int i=0; i<this.open.length; i++) {
+			for (Placement p:this.open[i].getPlacements()) {
+				double ratio = ((double)p.dh) / p.occupied.dH;
+				if (ratio > maxDropHRatio) { maxDropHRatio = ratio; }
+			}
+		}
+		return maxDropHRatio;
+	}
+	
 	public void validate() {
 		InstData inst = s.sysInfo.inst;
 		int[] boxCountPerType = inst.getBoxCountPerType();

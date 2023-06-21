@@ -8,10 +8,15 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
+import com.zhuwb.research.roboticpacking.inst.BoxType;
+import com.zhuwb.research.roboticpacking.inst.BoxType.Orientation;
 import com.zhuwb.research.roboticpacking.inst.InstConfig;
 import com.zhuwb.research.roboticpacking.inst.InstData;
 import com.zhuwb.research.roboticpacking.inst.InstanceLoader;
+import com.zhuwb.research.roboticpacking.inst.KnapsackUB;
 import com.zhuwb.research.roboticpacking.inst.SysConfig;
 import com.zhuwb.research.roboticpacking.inst.SystemInfo;
 import com.zhuwb.research.roboticpacking.inst.Vacuum.Type;
@@ -27,6 +32,7 @@ import com.zhuwb.research.roboticpacking.search.Solver;
 import com.zhuwb.research.roboticpacking.search.State;
 import com.zhuwb.research.roboticpacking.search.State.PalletFiteness;
 import com.zhuwb.research.rpp2i.boxpp.segmenttree.GridPointBySegmentTree;
+import com.zhuwb.research.rpp3i.sclp.common.KnapsackFitnessCalc;
 
 public class Main {
 
@@ -406,6 +412,27 @@ public class Main {
 		pw.close();
 	}
 	
+	
+	
+	public static void upperBoundAll(ArrayList<ExpConfig> confList, File outdir) throws IOException {
+		outdir.mkdirs();
+
+		File summaryFile = new File(outdir, "ub-summary-"+outdir.getName()+".csv");   	
+		boolean exists = summaryFile.exists();	
+		PrintWriter pw = new PrintWriter(new FileWriter(summaryFile, true));
+		if (!exists) {
+			pw.println("instName,util_ub"); pw.flush();
+		}
+
+		for (int i=0; i<confList.size(); i++) {
+			ExpConfig conf = confList.get(i);
+			SystemInfo sysInfo = new SystemInfo(conf.inst, conf.sysConf);
+			double volumeUB = KnapsackUB.upperBound(sysInfo);
+			pw.println(conf.inst.name+","+volumeUB); pw.flush();
+		}
+		pw.close();
+	}
+	
 	public static class ExecutionRecord {
 		public String instName;
 		
@@ -417,6 +444,9 @@ public class Main {
 		public double averageUtilClosed;    		// close的pallet的体积体用率
 		public double averageUtil;                  // 所有用到的pallet的体积利用率
 		
+		public int maxDropH;			// max {dropH of loaded boxes}
+		public double maxDropHRatio;	// max {dropH/dH of loaded boxes}
+		
 		public long time;
 		public long timePerBox;
 		
@@ -424,12 +454,13 @@ public class Main {
 		
 		
 		public static String getHeader() {
-			return "instName,algo,closedPalletCount,usedPalletCount,averageUtilClosed,averageUtil,time(s),timePerBox(s),averagePlacementsPerState";
+			return "instName,algo,closedPalletCount,usedPalletCount,averageUtilClosed,averageUtil,max{dropH},max{dropH/dH},time(s),timePerBox(s),averagePlacementsPerState";
 		}
 		
 		public String toString() {
 			return instName+","+algo + ","+closedPalletCount+","+usedPalletCount+","+
-					averageUtilClosed+","+averageUtil+","+time*0.001 + ","+ timePerBox*0.001+", "+averagePlacementsPerState;
+					averageUtilClosed+","+averageUtil+","+maxDropH+","+maxDropHRatio+","
+					+time*0.001 + ","+ timePerBox*0.001+", "+averagePlacementsPerState;
 		}
 		
 		public void print(PrintStream ps, String linePrefix) {
@@ -497,6 +528,9 @@ public class Main {
 		
 		exeRec.averageUtilClosed = sol.averageUtilClosed();
 		exeRec.averageUtil = sol.averageUtil();
+		
+		exeRec.maxDropH = sol.maxDropH();
+		exeRec.maxDropHRatio = sol.maxDropHRatio();
 		
 		exeRec.time = System.currentTimeMillis()-ti1;
 		exeRec.timePerBox = exeRec.time/inst.getBoxCount();

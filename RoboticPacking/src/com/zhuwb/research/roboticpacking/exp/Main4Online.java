@@ -13,6 +13,7 @@ import com.zhuwb.research.roboticpacking.inst.SysConfig;
 import com.zhuwb.research.roboticpacking.inst.Vacuum.Type;
 import com.zhuwb.research.roboticpacking.search.AlgoConfig;
 import com.zhuwb.research.roboticpacking.search.LookAheadOnline.SelectMode;
+import com.zhuwb.research.roboticpacking.stability.PalletLayout.Axis;
 import com.zhuwb.research.rpp2i.boxpp.segmenttree.GridPointBySegmentTree;
 
 public class Main4Online {
@@ -21,11 +22,19 @@ public class Main4Online {
 		long instSeed = 2;
 		int algoSeed = 2;
 		
-		expAlgoSelectMode(instSeed, algoSeed, new File("result/2021-07-05-selectMode-"+instSeed));
-		expAlgoSimCount(instSeed, algoSeed, new File("result/2021-07-05-simCount-"+instSeed));		
-		expBoxCountInRange(instSeed, algoSeed, new File("result/2021-07-05-boxCountInRange-"+instSeed));
-		expKnowBoxCount(instSeed, algoSeed, new File("result/2021-07-05-knowBoxCount-"+instSeed));
-		expFinal(instSeed, algoSeed, new File("result/2023-01-18-final-"+instSeed)); // output space occupied by each box in loading instruction
+//		expAlgoSelectMode(instSeed, algoSeed, new File("result/2021-07-05-selectMode-"+instSeed));
+//		expAlgoSimCount(instSeed, algoSeed, new File("result/2021-07-05-simCount-"+instSeed));		
+//		expBoxCountInRange(instSeed, algoSeed, new File("result/2021-07-05-boxCountInRange-"+instSeed));
+//		expKnowBoxCount(instSeed, algoSeed, new File("result/2021-07-05-knowBoxCount-"+instSeed));
+//		expFinal(instSeed, algoSeed, new File("result/2023-01-18-final-"+instSeed)); // output space occupied by each box in loading instruction
+		
+//		expMaxDropHeightRatio(instSeed, algoSeed, new File("result/2023-05-15-maxDropHeightRatio-"+instSeed));
+//		expIgnoreCollision(instSeed, algoSeed, new File("result/2023-05-15-ignoreCollision-"+instSeed));
+//		expDisableLWPush(instSeed, algoSeed, new File("result/2023-05-15-disableLWPush-"+instSeed));
+		
+//		expSemiOnline(instSeed, algoSeed, new File("result/2023-06-13-SemiOnline-"+instSeed));
+
+		expKnapsackUB(instSeed, algoSeed, new File("result/2023-06-20-KnapsackUB-"+instSeed));
 		
 		System.out.println("gridCount: "+GridPointBySegmentTree.gridCount+
 				"; segmentTreeCount: "+GridPointBySegmentTree.segmentTreeCount+
@@ -153,6 +162,89 @@ public class Main4Online {
 //		
 //		Main.runAll(expList, outdir);
 //	}
+
+	
+	// 这个实验是在说明 maxDropHeightRatio 对结果的影响,其它的算法参数随机选
+	// 跳过 instCount = 2000的例子
+	public static void expMaxDropHeightRatio(long instSeed, long algoSeed, File outdir) throws IOException{
+		ArrayList<ExpConfig> confList = genExpConfigOnline(instSeed, true, -1, algoSeed);
+		
+		ArrayList<ExpConfig> expList = new ArrayList<>();
+		for (ExpConfig confTemplate: confList) {
+			if (confTemplate.instConf.boxCount > 1000) { continue; }
+			for (double maxDropHeightRatio : new double[] {0.0,0.1,0.5,1.0}) {  
+				ExpConfig conf = confTemplate.deepCopy();
+				conf.algoConf.depth = 1; 
+				conf.algoConf.effort = 16;
+				conf.algoConf.hweight = 1;	// 2; before 06-13
+				conf.sysConf.openPalletCount = 1;
+				conf.algoConf.selectMode=SelectMode.voting;
+				conf.algoConf.simulationCount = 8;
+				conf.sysConf.maxDropHeightRatio = maxDropHeightRatio;
+				expList.add(conf);
+			}
+		}
+		
+		Main.runAll(expList, outdir);
+	}
+	
+	// 这个实验是在说明机器手碰撞对结果的影响,其它的算法参数随机选
+	// 跳过 instCount = 2000的例子
+	public static void expIgnoreCollision(long instSeed, long algoSeed, File outdir) throws IOException{
+		ArrayList<ExpConfig> confList = genExpConfigOnline(instSeed, true, -1, algoSeed);
+		
+		ArrayList<ExpConfig> expList = new ArrayList<>();
+		for (ExpConfig confTemplate: confList) {
+			if (confTemplate.instConf.boxCount > 1000) { continue; }
+			for (boolean ignoreCollision : new boolean[] {true,false}) {  
+				ExpConfig conf = confTemplate.deepCopy();
+				conf.algoConf.depth = 1; 
+				conf.algoConf.effort = 16;
+				conf.algoConf.hweight = 1;	// 2; before 06-13
+				conf.sysConf.openPalletCount = 1;
+				conf.algoConf.selectMode=SelectMode.voting;
+				conf.algoConf.simulationCount = 8;
+				conf.sysConf.ignoreCollision = ignoreCollision;
+				expList.add(conf);
+			}
+		}
+		
+		Main.runAll(expList, outdir);
+	}
+
+	// H-push vs H-,L-,W-push,其它的算法参数随机选
+	// 跳过 instCount = 2000的例子
+	public static void expDisableLWPush(long instSeed, long algoSeed, File outdir) throws IOException{
+		ArrayList<ExpConfig> confList = genExpConfigOnline(instSeed, true, -1, algoSeed);
+		
+		boolean[][] pushConfig = new boolean[2][3];
+		pushConfig[0][Axis.H.ordinal()] = true;
+		pushConfig[0][Axis.L.ordinal()] = false;
+		pushConfig[0][Axis.W.ordinal()] = false;
+		pushConfig[1][Axis.H.ordinal()] = true;
+		pushConfig[1][Axis.L.ordinal()] = true;
+		pushConfig[1][Axis.W.ordinal()] = true;
+		
+		ArrayList<ExpConfig> expList = new ArrayList<>();
+		for (ExpConfig confTemplate: confList) {
+			if (confTemplate.instConf.boxCount > 1000) { continue; }
+			for (boolean[] enabledPushes : pushConfig) {  
+				ExpConfig conf = confTemplate.deepCopy();
+				conf.algoConf.depth = 1; 
+				conf.algoConf.effort = 16;
+				conf.algoConf.hweight = 1;	// 2; before 06-13
+				conf.sysConf.openPalletCount = 1;
+				conf.algoConf.selectMode=SelectMode.voting;
+				conf.algoConf.simulationCount = 8;
+				conf.sysConf.enableHPush = enabledPushes[Axis.H.ordinal()];
+				conf.sysConf.enableLPush = enabledPushes[Axis.L.ordinal()];
+				conf.sysConf.enableWPush = enabledPushes[Axis.W.ordinal()];
+				expList.add(conf);
+			}
+		}
+		
+		Main.runAll(expList, outdir);
+	}
 	
 	// 固定了所有算法及系统参数，跑一个完整实验
 	public static void expFinal(long instSeed, long algoSeed, File outdir) throws IOException{
@@ -175,6 +267,60 @@ public class Main4Online {
 		
 		Main.runAll(expList, outdir);
 	}
+	
+	
+	// Semi-online的实验
+	// N^k = all, N^b = 1
+	public static void expSemiOnline(long instSeed, long algoSeed, File outdir) throws IOException{
+		ArrayList<ExpConfig> confList = genExpConfigOnline(instSeed, true, -1, algoSeed);
+		
+		ArrayList<ExpConfig> expList = new ArrayList<>();
+		for (ExpConfig confTemplate: confList) {
+			if (confTemplate.instConf.boxCount > 1000) { continue; }
+				ExpConfig conf = confTemplate.deepCopy();
+				conf.algoConf.depth = 1; 
+				conf.algoConf.effort = 16;
+				conf.algoConf.hweight = 1;
+				conf.sysConf.openPalletCount = 1;
+				conf.algoConf.selectMode=SelectMode.voting;
+				conf.algoConf.simulationCount = 8; 
+				conf.sysConf.boxCountInRange = 1;
+				conf.sysConf.knownBoxCount = conf.inst.t.length;
+				expList.add(conf);
+		}
+		
+		Main.runAll(expList, outdir);
+	}
+	
+	// compute Knapsack volume UB
+	public static void expKnapsackUB(long instSeed, long algoSeed, File outdir) throws IOException{
+		ArrayList<ExpConfig> confList = genExpConfigOnline(instSeed, true, -1, algoSeed);
+		Main.upperBoundAll(confList, outdir);
+	}
+	
+//	// offline的实验
+//	// N^k = all, N^b = 1
+//	public static void expOffline(long instSeed, long algoSeed, File outdir) throws IOException{
+//		ArrayList<ExpConfig> confList = genExpConfigOnline(instSeed, true, -1, algoSeed);
+//		
+//		ArrayList<ExpConfig> expList = new ArrayList<>();
+//		for (ExpConfig confTemplate: confList) {
+//			if (confTemplate.instConf.boxCount > 1000) { continue; }
+//				ExpConfig conf = confTemplate.deepCopy();
+//				conf.algoConf.depth = 1; 
+//				conf.algoConf.effort = 1;
+//				conf.algoConf.hweight = 1;
+//				conf.sysConf.openPalletCount = 1;
+//				conf.algoConf.selectMode=SelectMode.voting;
+//				conf.algoConf.simulationCount = 8; 
+//				conf.sysConf.boxCountInRange = 1;
+//				conf.sysConf.knownBoxCount = 50;
+//				expList.add(conf);
+//		}
+//		
+//		Main.runAll(expList, outdir);
+//	}
+
 	
 
 	

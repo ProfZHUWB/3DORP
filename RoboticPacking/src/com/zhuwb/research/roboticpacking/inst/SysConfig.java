@@ -9,6 +9,11 @@ public class SysConfig implements Cloneable {
 	public Type vaccumType = Type.TwoByThree; // 机械手吸盘的长宽数量比
 	public double theta = 1.0;                // 机械手大小的缩放比例
 	public double maxDropHeightRatio = 0.1;   // 一个盒子可以安全的自由下落盒子在H-轴上10%的长度
+	
+	public boolean ignoreCollision = false;   // true: 忽略机器手碰撞
+	public boolean enableHPush = true;        // 允许H-push, 龙门码垛机只允许H-push
+	public boolean enableLPush = true;		  // 允许L-push
+	public boolean enableWPush = true;        // 允许W-push
 
 	// 盒子 b 对盒子 a 提供支持的条件：
 	//     a.h1 - b.h2 <= maxGapForSupport  考虑到一些包装材料可能会有小形变，高度差不大时底下的盒子可以支撑上面的
@@ -28,16 +33,20 @@ public class SysConfig implements Cloneable {
 	public int boxCountInRange = 3;           //oper 机械手可以操作的个数, N_b
 
 	public static String getHeader() {
-		return "vaccumType,theta,maxDropHeightRatio,maxHGapForSupport,minOverlapRatioForSupport,knownBoxCount,openPalletCount,boxCountInRange";
+		return "vaccumType,theta,maxDropHeightRatio,ignoreCollision,enableHPush,enableLPush,enableWPush,maxHGapForSupport,minOverlapRatioForSupport,knownBoxCount,openPalletCount,boxCountInRange";
 	}
 	public String toString() {
-		return vaccumType+","+theta +","+maxDropHeightRatio+","+maxHGapForSupport+","+minOverlapRatioForSupport+","+knownBoxCount+","+openPalletCount+","+boxCountInRange;
+		return vaccumType+","+theta +","+maxDropHeightRatio+","+ignoreCollision+","+enableHPush+","+enableLPush+","+enableWPush+","+maxHGapForSupport+","+minOverlapRatioForSupport+","+knownBoxCount+","+openPalletCount+","+boxCountInRange;
 	}
 	
 	public void print(PrintStream ps, String linePrefix) {
 		ps.println(linePrefix+"vaccumType: "+vaccumType);
 		ps.println(linePrefix+"theta: "+theta);
 		ps.println(linePrefix+"maxDropHeightRatio: "+maxDropHeightRatio);
+		ps.println(linePrefix+"ignoreCollision: "+ignoreCollision);
+		ps.println(linePrefix+"enableHPush: "+enableHPush);
+		ps.println(linePrefix+"enableLPush: "+enableLPush);
+		ps.println(linePrefix+"enableWPush: "+enableWPush);
 		ps.println(linePrefix+"maxHGapForSupport: "+maxHGapForSupport);
 		ps.println(linePrefix+"minOverlapRatioForSupport: "+minOverlapRatioForSupport);
 		ps.println(linePrefix+"knownBoxCount: "+knownBoxCount);

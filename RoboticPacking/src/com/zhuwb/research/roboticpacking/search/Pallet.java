@@ -182,8 +182,9 @@ public class Pallet implements Cloneable {
 	// check if all placedbox are inside loading space
 	// no placed box overlap with free space
 	// no placed box overlap
-	// boxPath, dropPath and gripperPath doe not overlap with previous placed boxes
-	// dropping is valid
+	// sysInfo.conf.ignoreCollision = true, or
+	// 		boxPath, dropPath and gripperPath doe not overlap with previous placed boxes
+	// 		dropping is valid
 	// placed boxes are supported
 	public void validate() {
 		Space loadingSpace = new Space(0,0,0,sysInfo.inst.L, sysInfo.inst.W, sysInfo.inst.H);
@@ -203,7 +204,7 @@ public class Pallet implements Cloneable {
 				}
 			}
 			
-			if (p.dh > p.ort.maxDropH) {
+			if ((!sysInfo.conf.ignoreCollision) && p.dh > p.ort.maxDropH) {
 				genDebugCode();
 				throw new RuntimeException("placement: "+p+", drop height exceed maxDropH in orientation: "+p.ort);
 			}
@@ -217,6 +218,9 @@ public class Pallet implements Cloneable {
 					p.print("  ", System.out); System.out.flush();
 					placed.print("  ", System.out); System.out.flush();
 					throw new RuntimeException("j="+j+" placement: "+p+", box overlap with existing: "+placed+" k="+k);
+				}
+				if (sysInfo.conf.ignoreCollision) {
+					continue;
 				}
 				if (p.dropPath.intersectTest(placed.occupied)) {
 					genDebugCode();
@@ -304,12 +308,18 @@ public class Pallet implements Cloneable {
 					
 					createLWGridForPush(s,ort);
 
-//					System.out.println("==== try L-push, before count: "+placements.size());
-					findPlacementsLPush(s, boxType, ort, placements, pTable); 
-//					System.out.println("==== try W-push, before count: "+placements.size());
-					findPlacementsWPush(s, boxType, ort, placements,  pTable); 
-//					System.out.println("==== try H-push, before count: "+placements.size());
-					findPlacementsHPush(s, boxType, ort, placements,  pTable);
+					if (sysInfo.conf.enableLPush) {
+//						System.out.println("==== try L-push, before count: "+placements.size());
+						findPlacementsLPush(s, boxType, ort, placements, pTable);
+					}
+					if (sysInfo.conf.enableWPush) {
+//						System.out.println("==== try W-push, before count: "+placements.size());
+						findPlacementsWPush(s, boxType, ort, placements,  pTable);
+					}
+					if (sysInfo.conf.enableHPush) {
+//						System.out.println("==== try H-push, before count: "+placements.size());
+						findPlacementsHPush(s, boxType, ort, placements,  pTable);
+					}
 //					System.out.println("==== placement count: "+placements.size());
 				}
 			}
@@ -330,7 +340,7 @@ public class Pallet implements Cloneable {
 	 * @param pTable		保存找到的placement
 	 */
 	protected void findPlacementsLPush(Space s, int boxType, Orientation ort, ArrayList<Placement> placements, HashMap<Placement, Placement> pTable) {
-		if (!sysInfo.gripper.canLPush(ort)) { return; }
+		if ((!sysInfo.conf.ignoreCollision) && !sysInfo.gripper.canLPush(ort)) { return; }
 
 		// 试图找出所有可以把盒子可以推到的位置
 		// 尝试L-push下可用空间s所有可以放ort的位置
@@ -404,7 +414,7 @@ public class Pallet implements Cloneable {
 				p.dh = searchForDropHeight(p, supportBoxIdx);	
 				
 				// 如果下落太多，就不行
-				if (p.dh > ort.maxDropH) { continue; }
+				if ((!sysInfo.conf.ignoreCollision) && p.dh > ort.maxDropH) { continue; }
 				// 2. 计算盒子所占用空间及盒子下落轨迹
 				p.computeOccupiedAndDrop();
 	
@@ -417,7 +427,8 @@ public class Pallet implements Cloneable {
 				Space gripperPath = gripper.gripperPathL(p.releaseL,p.releaseW,p.releaseH, 
 										ort, sysInfo.inst.L, Align.org);
 				// 抓手的下边界必须高于托盘的底面且抓手轨迹与已有盒子不碰撞
-				if(gripperPath.h1 >= 0 && !checkCollisionForLPush(gripperPath)) { // 已经找到可行方案					
+				if(sysInfo.conf.ignoreCollision ||
+						gripperPath.h1 >= 0 && !checkCollisionForLPush(gripperPath)) { // 已经找到可行方案					
 					p.gripperPath = gripperPath;   // org
 					p.pushAxis = PushAxis.L;
 					p.align = Align.org;
@@ -684,7 +695,7 @@ public class Pallet implements Cloneable {
 	 * @param pTable		保存找到的placement
 	 */
 	protected void findPlacementsWPush(Space s, int boxType, Orientation ort, ArrayList<Placement> placements, HashMap<Placement, Placement> pTable) {
-		if (!sysInfo.gripper.canWPush(ort)) { return; }
+		if ((!sysInfo.conf.ignoreCollision) && !sysInfo.gripper.canWPush(ort)) { return; }
 
 		// 试图找出所有可以把盒子可以推到的位置
 		// 尝试W-push下可用空间s所有可以放ort的位置
@@ -741,7 +752,7 @@ public class Pallet implements Cloneable {
 				int supportBoxIdx = searchFirstSupport(p,ort);
 				p.dh = searchForDropHeight(p, supportBoxIdx);
 				// 如果下落太多，就不行
-				if (p.dh > ort.maxDropH) { continue; }
+				if ((!sysInfo.conf.ignoreCollision) && p.dh > ort.maxDropH) { continue; }
 				// 2. 计算盒子所占用空间及盒子下落轨迹
 				p.computeOccupiedAndDrop();
 	
@@ -755,7 +766,8 @@ public class Pallet implements Cloneable {
 				Space gripperPath = gripper.gripperPathW(p.releaseL,p.releaseW,p.releaseH, 
 										ort, sysInfo.inst.W, Align.org);
 				// 抓手的下边界必须高于托盘的底面且抓手轨迹与已有盒子不碰撞
-				if (gripperPath.h1 >= 0 && !checkCollisionForWPush(gripperPath)) { // 已经找到可行方案
+				if (sysInfo.conf.ignoreCollision ||
+						gripperPath.h1 >= 0 && !checkCollisionForWPush(gripperPath)) { // 已经找到可行方案
 					p.gripperPath = gripperPath;   // org
 					p.pushAxis = PushAxis.W;
 					p.align = Align.org;
@@ -846,7 +858,7 @@ public class Pallet implements Cloneable {
 	 * @param pTable		保存找到的placement
 	 */
 	protected void findPlacementsHPush(Space s, int boxType, Orientation ort, ArrayList<Placement> placements, HashMap<Placement, Placement> pTable) {
-		if (!sysInfo.gripper.canHPush(ort)) { return; }
+		if ((!sysInfo.conf.ignoreCollision) && !sysInfo.gripper.canHPush(ort)) { return; }
 
 		// 试图找出所有可以把盒子可以推到的位置
 		// 尝试H-push下可用空间s所有可以放ort的位置
@@ -888,7 +900,7 @@ public class Pallet implements Cloneable {
 			int supportBoxIdx = searchFirstSupport(p,ort);
 			p.dh = searchForDropHeight(p, supportBoxIdx);
 			// 如果下落太多，就不行
-			if (p.dh > ort.maxDropH) { continue; }
+			if ((!sysInfo.conf.ignoreCollision) && p.dh > ort.maxDropH) { continue; }
 			// 2. 计算盒子所占用空间及盒子下落轨迹
 			p.computeOccupiedAndDrop();
 
@@ -901,7 +913,8 @@ public class Pallet implements Cloneable {
 			Vacuum gripper = sysInfo.gripper;
 			Space gripperPath = gripper.gripperPathH(p.releaseL,p.releaseW,p.releaseH, 
 									ort, sysInfo.inst.H, Align.org);
-			if(!checkCollisionForHPush(gripperPath)) { // 已经找到可行方案
+			if(sysInfo.conf.ignoreCollision ||
+					!checkCollisionForHPush(gripperPath)) { // 已经找到可行方案
 				p.gripperPath = gripperPath;   // org
 				p.pushAxis = PushAxis.H;
 				p.align = Align.org;
